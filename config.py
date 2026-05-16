@@ -1,5 +1,6 @@
 """
 Configuration module for Sales Intelligence AI
+Handles both local .env and Streamlit Cloud secrets
 """
 
 import os
@@ -9,15 +10,27 @@ from dotenv import load_dotenv
 # Load local .env for development
 load_dotenv()
 
+# =========================
+# SECRET HELPER
+# =========================
+
 def get_secret(key, default=None):
     """
-    Read from Streamlit secrets first,
-    then fallback to environment variables
+    Priority:
+    1. Streamlit Cloud secrets
+    2. Local .env
+    3. Default value
     """
+
+    # Try Streamlit secrets
     try:
-        return st.secrets[key]
-    except:
-        return os.getenv(key, default)
+        if key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        pass
+
+    # Fallback to .env
+    return os.getenv(key, default)
 
 # =========================
 # SUPABASE
@@ -34,7 +47,7 @@ SUPABASE_SERVICE_KEY = get_secret("SUPABASE_SERVICE_KEY")
 DB_URL = get_secret("DB_URL")
 
 # =========================
-# APP
+# APPLICATION
 # =========================
 
 APP_SECRET_KEY = get_secret(
@@ -99,7 +112,7 @@ def validate_config():
 
     missing = [
         key for key, value in required.items()
-        if not value
+        if value is None or value == ""
     ]
 
     if missing:
@@ -107,4 +120,16 @@ def validate_config():
             f"Missing required configuration: {', '.join(missing)}"
         )
 
+# Validate immediately
 validate_config()
+
+# =========================
+# DEBUG LOGS
+# =========================
+
+print("========== CONFIG DEBUG ==========")
+print("SUPABASE_URL:", bool(SUPABASE_URL))
+print("SUPABASE_KEY:", bool(SUPABASE_KEY))
+print("DB_URL:", bool(DB_URL))
+print("ENVIRONMENT:", ENVIRONMENT)
+print("==================================")
