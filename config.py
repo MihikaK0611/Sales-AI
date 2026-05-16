@@ -1,57 +1,110 @@
 """
 Configuration module for Sales Intelligence AI
-Loads sensitive credentials from environment variables
 """
+
 import os
+import streamlit as st
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load local .env for development
 load_dotenv()
 
-# Supabase Configuration
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+def get_secret(key, default=None):
+    """
+    Read from Streamlit secrets first,
+    then fallback to environment variables
+    """
+    try:
+        return st.secrets[key]
+    except:
+        return os.getenv(key, default)
 
-# Database Configuration
-DB_URL = os.getenv("DB_URL")
+# =========================
+# SUPABASE
+# =========================
 
-# Application Configuration
-APP_SECRET_KEY = os.getenv("APP_SECRET_KEY", "default-secret-key-change-in-production")
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+SUPABASE_URL = get_secret("SUPABASE_URL")
+SUPABASE_KEY = get_secret("SUPABASE_KEY")
+SUPABASE_SERVICE_KEY = get_secret("SUPABASE_SERVICE_KEY")
 
-# Email Configuration
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+# =========================
+# DATABASE
+# =========================
 
-# OCR Configuration
-TESSERACT_PATH = os.getenv("TESSERACT_PATH", "tesseract")
+DB_URL = get_secret("DB_URL")
 
-# File Upload Configuration
-MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "50"))
-ALLOWED_EXTENSIONS = os.getenv("ALLOWED_EXTENSIONS", "pdf,xlsx,xls,csv,jpg,jpeg,png").split(",")
+# =========================
+# APP
+# =========================
 
-# Validate required environment variables
+APP_SECRET_KEY = get_secret(
+    "APP_SECRET_KEY",
+    "default-secret-key"
+)
+
+ENVIRONMENT = get_secret(
+    "ENVIRONMENT",
+    "development"
+)
+
+# =========================
+# EMAIL
+# =========================
+
+SMTP_HOST = get_secret(
+    "SMTP_HOST",
+    "smtp.gmail.com"
+)
+
+SMTP_PORT = int(
+    get_secret("SMTP_PORT", 587)
+)
+
+SMTP_USER = get_secret("SMTP_USER")
+SMTP_PASSWORD = get_secret("SMTP_PASSWORD")
+
+# =========================
+# OCR
+# =========================
+
+TESSERACT_PATH = get_secret(
+    "TESSERACT_PATH",
+    "tesseract"
+)
+
+# =========================
+# FILES
+# =========================
+
+MAX_FILE_SIZE_MB = int(
+    get_secret("MAX_FILE_SIZE_MB", 50)
+)
+
+ALLOWED_EXTENSIONS = get_secret(
+    "ALLOWED_EXTENSIONS",
+    "pdf,xlsx,xls,csv,jpg,jpeg,png"
+).split(",")
+
+# =========================
+# VALIDATION
+# =========================
+
 def validate_config():
-    """Validate that all required environment variables are set"""
-    required_vars = {
+
+    required = {
         "SUPABASE_URL": SUPABASE_URL,
         "SUPABASE_KEY": SUPABASE_KEY,
         "DB_URL": DB_URL
     }
-    
-    missing_vars = [var for var, value in required_vars.items() if not value]
-    
-    if missing_vars:
+
+    missing = [
+        key for key, value in required.items()
+        if not value
+    ]
+
+    if missing:
         raise ValueError(
-            f"Missing required environment variables: {', '.join(missing_vars)}\n"
-            f"Please create a .env file based on .env.example"
+            f"Missing required configuration: {', '.join(missing)}"
         )
 
-# Validate configuration on import
-if ENVIRONMENT == "production":
-    validate_config()
-
-# Made with Bob
+validate_config()
