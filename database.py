@@ -86,7 +86,24 @@ def insert_data(df: pd.DataFrame, file_id: str, user_id: str) -> bool:
         df["user_id"] = user_id
         df["file_id"] = file_id
 
-        df.to_sql("sales_data", engine, if_exists="append", index=False, method="multi")
+        # FIX: Supabase stores user_id and file_id as UUID columns.
+        # SQLAlchemy infers them as VARCHAR from Python strings, causing:
+        # "column is of type uuid but expression is of type character varying"
+        # Explicitly cast both to PostgreSQL UUID type via dtype mapping.
+        from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+        dtype_map = {
+            "user_id": PG_UUID(as_uuid=False),
+            "file_id": PG_UUID(as_uuid=False),
+        }
+
+        df.to_sql(
+            "sales_data",
+            engine,
+            if_exists="append",
+            index=False,
+            method="multi",
+            dtype=dtype_map,
+        )
 
         logger.info(f"Inserted {len(df)} records for file {file_id}")
         return True
